@@ -20,66 +20,64 @@ struct AgentFileView: View {
 
     var body: some View {
         ZStack(alignment: .leading) {
+            CardBackground(wash: nil)
             if let change {
                 let diff = change.diff
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "doc.text")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(Color(hex: "#9398A1"))
-                        Text(diff.name)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Color(hex: "#F5F6F8"))
-                            .lineLimit(1)
-                        Spacer(minLength: 2)
-                        if diff.added > 0 {
-                            Text("+\(diff.added)")
-                                .font(.system(size: 10, weight: .medium).monospaced())
-                                .foregroundColor(Color(hex: "#22C55E"))
-                        }
-                        if diff.removed > 0 {
-                            Text("−\(diff.removed)")
-                                .font(.system(size: 10, weight: .medium).monospaced())
-                                .foregroundColor(Color(hex: "#F4505E"))
-                        }
-                        Button(action: onClose) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 8, weight: .medium))
-                                .foregroundColor(Color(hex: "#5F646D"))
-                                .frame(width: 14, height: 14)
-                                .background(Color.white.opacity(0.07))
-                                .clipShape(Circle())
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .contentShape(Rectangle())
-                    .gesture(DragGesture(minimumDistance: 0).onChanged { _ in moveWindow() }.onEnded { _ in dragStart = nil })
-                    Divider().overlay(Color.white.opacity(0.08))
-                    if state.agentChanges.count > 1 { tabs }
-                    ScrollViewReader { proxy in
-                        ScrollView(.vertical, showsIndicators: false) {
-                            let lines = visibleLines(of: diff)
-                            VStack(alignment: .leading, spacing: 0) {
-                                ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
-                                    DiffLineRowView(line: line).id(index)
-                                }
+                HStack(alignment: .center, spacing: 0) {
+                    BotCanvasView(state: state)
+                        .frame(width: 64, height: 64)
+                        .frame(width: 84)
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "doc.text")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(Color(hex: "#9398A1"))
+                            Text(diff.name)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color(hex: "#F5F6F8"))
+                                .lineLimit(1)
+                            Spacer(minLength: 2)
+                            if diff.added > 0 {
+                                Text("+\(diff.added)")
+                                    .font(.system(size: 11, weight: .medium).monospaced())
+                                    .foregroundColor(Color(hex: "#22C55E"))
                             }
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 4)
-                            .onChange(of: lines.count) { _, count in proxy.scrollTo(count - 1, anchor: .bottom) }
-                            .onChange(of: typed) { _, _ in proxy.scrollTo(lines.count - 1, anchor: .bottom) }
+                            if diff.removed > 0 {
+                                Text("−\(diff.removed)")
+                                    .font(.system(size: 11, weight: .medium).monospaced())
+                                    .foregroundColor(Color(hex: "#F4505E"))
+                            }
+                            Button(action: onClose) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 9, weight: .medium))
+                                    .foregroundColor(Color(hex: "#9398A1"))
+                            }
+                            .buttonStyle(IconButtonStyle())
                         }
+                        .contentShape(Rectangle())
+                        .gesture(DragGesture(minimumDistance: 0).onChanged { _ in moveWindow() }.onEnded { _ in dragStart = nil })
+                        if state.agentChanges.count > 1 { tabs }
+                        ScrollViewReader { proxy in
+                            ScrollView(.vertical, showsIndicators: false) {
+                                let lines = visibleLines(of: diff)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                                        AgentDiffRow(line: line).id(index)
+                                    }
+                                }
+                                .padding(8)
+                                .onChange(of: lines.count) { _, count in proxy.scrollTo(count - 1, anchor: .bottom) }
+                                .onChange(of: typed) { _, _ in proxy.scrollTo(lines.count - 1, anchor: .bottom) }
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(Color.white.opacity(0.04))
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+                        footer(change)
                     }
-                    Divider().overlay(Color.white.opacity(0.08))
-                    footer(change)
+                    .padding(.trailing, 18)
+                    .padding(.vertical, 16)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .background(Color(hex: "#141518"))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(Color.white.opacity(0.14), lineWidth: 1))
                 .task(id: change.id) {
                     if change.id == state.agentChanges.last?.id, !played.contains(change.id) {
                         await type(diff)
@@ -101,26 +99,24 @@ struct AgentFileView: View {
                     let selected = item.id == change?.id
                     Button { state.agentSelected = item.id } label: {
                         Text(item.diff.name)
-                            .font(.system(size: 10.5, weight: .medium))
-                            .foregroundColor(selected ? Color(hex: "#F5F6F8") : Color(hex: "#6B7079"))
+                            .font(.system(size: 11.5, weight: .medium))
+                            .foregroundColor(selected ? Color(hex: "#F1F2F4") : Color(hex: "#9398A1"))
                             .strikethrough(item.undone)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(Color.white.opacity(selected ? 0.12 : 0.05))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 5)
+                            .background(Color.white.opacity(selected ? 0.12 : 0.06))
                             .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
         }
     }
 
     private func footer(_ change: AgentChange) -> some View {
         HStack(spacing: 8) {
             Text(verbatim: change.undone ? "Modification annulée." : (undoError ?? ""))
-                .font(.system(size: 10.5))
+                .font(.system(size: 12))
                 .foregroundColor(Color(hex: change.undone ? "#9398A1" : "#F4505E"))
                 .lineLimit(1)
             Spacer(minLength: 2)
@@ -128,8 +124,6 @@ struct AgentFileView: View {
                 SecondaryButton(verbatim: "Annuler la modification") { undo(change) }
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
     }
 
     private func undo(_ change: AgentChange) {
@@ -187,5 +181,36 @@ struct AgentFileView: View {
             if Task.isCancelled { return }
             typed = min(total, typed + step)
         }
+    }
+}
+
+/// A diff line in the app's style: soft colours, rounded highlight, a bit more air than the hook diff card.
+private struct AgentDiffRow: View {
+    let line: DiffLine
+
+    private var tint: Color? {
+        switch line.kind {
+        case .added: return Color(hex: "#22C55E")
+        case .removed: return Color(hex: "#F4505E")
+        case .context: return nil
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(verbatim: line.kind == .added ? "+" : line.kind == .removed ? "−" : " ")
+                .foregroundColor(tint ?? Color(hex: "#454850"))
+                .frame(width: 10, alignment: .leading)
+            Text(verbatim: line.text.isEmpty ? " " : line.text)
+                .foregroundColor(tint == nil ? Color(hex: "#9398A1") : Color(hex: "#F1F2F4"))
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .font(.system(size: 11.5).monospaced())
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background((tint ?? .clear).opacity(0.14))
+        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
     }
 }

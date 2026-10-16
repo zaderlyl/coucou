@@ -5,7 +5,7 @@ import SwiftUI
 @MainActor
 final class AgentFileWindow {
     static let shared = AgentFileWindow()
-    private static let size = NSSize(width: 520, height: 260)
+    private static let size = NSSize(width: 600, height: 320)
     private var panel: NSPanel?
     var window: NSWindow? { panel }
 

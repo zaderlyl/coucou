@@ -27,7 +27,6 @@ struct IslandViewContent: View {
         case .greeting:  EmptyView()  // GreetingCanvasView overlaid in IslandRootView
         case .wardrobe:  WardrobeView(state: state)
         case .recap:     WeeklyRecapCardView(state: state)
-        case .agentFile: AgentFileView(state: state)
         case .listening:
             #if !APPSTORE
             VoiceListeningView(isActive: state.view == .listening)

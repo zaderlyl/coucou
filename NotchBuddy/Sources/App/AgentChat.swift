@@ -154,7 +154,7 @@ enum AgentChat {
         case .finished:
             return
         }
-        NotificationCenter.default.post(name: .hookExpand, object: IslandView.agentFile)
+        AgentFileWindow.shared.show(state: state)
     }
 
     private static func finish(_ answer: String, provider: AgentProvider, session: AgentProvider.Session?,

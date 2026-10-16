@@ -19,6 +19,7 @@
 		03FDC0AA0CEDE913B59D0F4D /* NowPlayingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F56C7E1EBC74664A7F1689CF /* NowPlayingViews.swift */; };
 		0408FE7F86EBEE61CAED32DA /* TurnRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2DFAEAF1DD1CBF03D3C314E /* TurnRecorder.swift */; };
 		0417DE195518EE21267F8479 /* IslandTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0365DDE3C554F5E8570055F4 /* IslandTypes.swift */; };
+		046ED381E6BBBEA4E1C3609C /* AgentFileWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A8FCDFDF716834EA42C91C0 /* AgentFileWindow.swift */; };
 		053B30CF4568F7FE5138A898 /* MochiWardrobe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79A7807ADD0963FF260D1FAD /* MochiWardrobe.swift */; };
 		05F087B838004891988FBA79 /* FlowAudioBands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0596FD03875A10BD2CCBE332 /* FlowAudioBands.swift */; };
 		065FCE817315454DE3F85F25 /* IslandViewContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA02B08886939FF6FE0475DD /* IslandViewContent.swift */; };
@@ -273,6 +274,7 @@
 		B09E884B33A35FA34543C64B /* IntentParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = F39753CFF90B494D449CCD95 /* IntentParser.swift */; };
 		B0CE5AC8B579866A14BD61D0 /* DemoEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEF5BD66B00BB64BB80AF38C /* DemoEngine.swift */; };
 		B2584220B877056366C8DCAE /* MochiWardrobe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79A7807ADD0963FF260D1FAD /* MochiWardrobe.swift */; };
+		B2904842FF1B542AC6FCB089 /* AgentFileWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A8FCDFDF716834EA42C91C0 /* AgentFileWindow.swift */; };
 		B2D86BE268D6F4C86BD0C446 /* ChatMarkdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = D797CC384B5BC70D34F121BC /* ChatMarkdown.swift */; };
 		B314F09AD7924387D0E04B45 /* BotEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66E6F5FC81429871B6F766A8 /* BotEngine.swift */; };
 		B3EC9CF3C8BD629C3530E8F1 /* sounds in Resources */ = {isa = PBXBuildFile; fileRef = C066E2B991AA4F56B2724263 /* sounds */; };
@@ -503,6 +505,7 @@
 		5108F622EF0C553F053716C2 /* SessionStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStatus.swift; sourceTree = "<group>"; };
 		54E47E39D2D52584FA219FA1 /* LiveVoiceControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveVoiceControls.swift; sourceTree = "<group>"; };
 		56A2317343D062ACCAF4E5BD /* DictationTranscript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationTranscript.swift; sourceTree = "<group>"; };
+		5A8FCDFDF716834EA42C91C0 /* AgentFileWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentFileWindow.swift; sourceTree = "<group>"; };
 		5C3E2269A202B640E7F3B5E0 /* CoucouWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = CoucouWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		5C406C508A86E215B3CBE3FC /* CoucouControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoucouControl.swift; sourceTree = "<group>"; };
 		60401D1023D17C3FD30D7113 /* PhoneAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = PhoneAssets.xcassets; sourceTree = "<group>"; };
@@ -670,6 +673,7 @@
 			children = (
 				8015F9EDE795265F753B21B4 /* AgentChat.swift */,
 				E63D44D11C044019FAA4D9BB /* AgentFileView.swift */,
+				5A8FCDFDF716834EA42C91C0 /* AgentFileWindow.swift */,
 				E269A474928E8BCD88627C9D /* AgentLauncher.swift */,
 				4AA68FE435C40C0AD7347122 /* AgentRouter.swift */,
 				8532BB03EC9317D57CF335DC /* AgentStream.swift */,
@@ -1159,6 +1163,7 @@
 			files = (
 				1B576C919EB3B1649E60F28B /* AgentChat.swift in Sources */,
 				D1513155870E9B7A2739A4E9 /* AgentFileView.swift in Sources */,
+				B2904842FF1B542AC6FCB089 /* AgentFileWindow.swift in Sources */,
 				6054EBAB2CD8D14B853DBCBE /* AgentLauncher.swift in Sources */,
 				14B1BF4D130666B3DB9CF905 /* AgentRouter.swift in Sources */,
 				03AC3C65D66DF54B867DB896 /* AgentStream.swift in Sources */,
@@ -1394,6 +1399,7 @@
 			files = (
 				E4F32160E1C09A1D960EBDF7 /* AgentChat.swift in Sources */,
 				AA16DEE4936DDC451D19BC58 /* AgentFileView.swift in Sources */,
+				046ED381E6BBBEA4E1C3609C /* AgentFileWindow.swift in Sources */,
 				91995DE7256293632901DD2D /* AgentLauncher.swift in Sources */,
 				65A107D5DD9FCA02EAAA452F /* AgentRouter.swift in Sources */,
 				807759B0AB67B61494BBD715 /* AgentStream.swift in Sources */,

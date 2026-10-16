@@ -1,15 +1,15 @@
 import SwiftUI
 
-/// The island when the CLI agent changes a file (chat /agent!): Mochi on the left, a bordered
-/// card on the right with the file name and the lines added or removed.
+/// The card shown in its own window (AgentFileWindow) when the CLI agent changes a file (chat /agent!):
+/// bordered, with the file name and the lines added or removed.
 struct AgentFileView: View {
     @ObservedObject var state: AppState
+    let onClose: () -> Void
     /// Characters of added lines typed so far; the diff is replayed like live typing.
     @State private var typed = 0
 
     var body: some View {
         ZStack(alignment: .leading) {
-            CardBackground(wash: nil)
             if let diff = state.agentFile {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 6) {
@@ -31,6 +31,15 @@ struct AgentFileView: View {
                                 .font(.system(size: 10, weight: .medium).monospaced())
                                 .foregroundColor(Color(hex: "#F4505E"))
                         }
+                        Button(action: onClose) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 8, weight: .medium))
+                                .foregroundColor(Color(hex: "#5F646D"))
+                                .frame(width: 14, height: 14)
+                                .background(Color.white.opacity(0.07))
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
@@ -51,13 +60,10 @@ struct AgentFileView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .background(Color.white.opacity(0.03))
+                .background(Color(hex: "#141518"))
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(Color.white.opacity(0.14), lineWidth: 1))
-                .padding(.leading, 96)
-                .padding(.trailing, 16)
-                .padding(.vertical, 14)
                 .task(id: diff) { await type(diff) }
             }
         }

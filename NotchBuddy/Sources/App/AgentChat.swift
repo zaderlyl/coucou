@@ -1,7 +1,8 @@
 import Foundation
 
 /// Branche le lanceur d'agent sur le chat de l'île, sans toucher à ses vues :
-/// `/agent <demande>` lance `claude -p` en lecture seule, `/stop` l'annule,
+/// `/agent <demande>` choisit l'IA (claude, gemini ou codex) selon la demande et la lance en lecture seule ;
+/// `/claude`, `/gemini` et `/codex <demande>` en imposent une. `/stop` annule,
 /// `/projet` liste les projets (ceux ouverts dans VS Code d'abord) et `/projet <n° ou nom>` en choisit un.
 /// Le projet choisi est gardé dans la clé `agentProjectPath`.
 @MainActor
@@ -9,13 +10,28 @@ enum AgentChat {
     static let command = "/agent "
     static let stopCommand = "/stop"
     static let projectCommand = "/projet"
+    static let endCommand = "/fin"
+    /// Conversation Claude en cours : tant qu'elle existe, les messages sans « / » lui sont envoyés.
+    private static var conversationID: UUID?
     private static let projectKey = "agentProjectPath"
     private static let githubRoot = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("Documents/GitHub")
     private static let launcher = AgentLauncher()
 
+    /// `/claude`, `/gemini`, `/codex` : choisit l'IA sans passer par le routeur.
+    private static func forcedProvider(_ query: String) -> (AgentProvider, String)? {
+        for provider in AgentProvider.allCases {
+            let prefix = "/\(provider.rawValue) "
+            if query.hasPrefix(prefix) { return (provider, String(query.dropFirst(prefix.count))) }
+        }
+        return nil
+    }
+
     static func handles(_ query: String) -> Bool {
-        query.hasPrefix(command) || query == stopCommand
+        (conversationID != nil && !query.hasPrefix("/"))
+            || query == endCommand
+            || forcedProvider(query) != nil
+            || query.hasPrefix(command) || query == stopCommand
             || query == projectCommand || query.hasPrefix(projectCommand + " ")
     }
 
@@ -64,19 +80,44 @@ enum AgentChat {
             launcher.cancel()
             return
         }
+        if query == endCommand {
+            conversationID = nil
+            reply("Conversation avec l'agent terminée.", state: state)
+            return
+        }
         if query == projectCommand || query.hasPrefix(projectCommand + " ") {
+            conversationID = nil
             chooseProject(String(query.dropFirst(projectCommand.count)).trimmingCharacters(in: .whitespaces), state: state)
             return
         }
-        let prompt = String(query.dropFirst(command.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        let continuing = conversationID != nil && !query.hasPrefix("/")
+        let forced = continuing ? nil : forcedProvider(query)
+        let prompt = (continuing ? query : (forced?.1 ?? String(query.dropFirst(command.count))))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty else {
-            reply("Usage : /agent <demande>. Dossier : \(projectURL.path)", state: state)
+            reply("Usage : /agent <demande> (ou /claude, /gemini, /codex). Dossier : \(projectURL.path)", state: state)
             return
         }
+        let provider = continuing ? .claude : (forced?.0 ?? AgentRouter.provider(for: prompt))
+        // Seul Claude garde le fil : une nouvelle demande ouvre une nouvelle session, la suite la reprend.
+        let session: AgentProvider.Session?
+        if continuing, let id = conversationID {
+            session = .resume(id)
+        } else if provider == .claude {
+            session = .start(UUID())
+        } else {
+            session = nil
+        }
+        if !continuing { conversationID = nil }
         state.stateOverride = .thinking
         do {
-            let answer = try await launcher.run(prompt: prompt, in: projectURL)
-            reply(answer.isEmpty ? "(réponse vide)" : answer, state: state)
+            let answer = try await launcher.run(prompt: prompt, provider: provider, session: session, in: projectURL)
+            var text = "[\(provider.rawValue)] " + (answer.isEmpty ? "(réponse vide)" : answer)
+            if case .start(let id)? = session {
+                conversationID = id
+                text += "\n\n(Réponds directement pour continuer, /fin pour terminer.)"
+            }
+            reply(text, state: state)
         } catch AgentLauncher.LaunchError.cancelled {
             reply("Agent annulé.", state: state)
         } catch {

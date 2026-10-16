@@ -17,7 +17,7 @@ enum AgentProvider: String, CaseIterable, Sendable {
     func arguments(prompt: String, session: Session? = nil, writable: Bool = false) -> [String] {
         switch self {
         case .claude:
-            var args = ["-p", prompt, "--model", "sonnet"]
+            var args = ["-p", prompt, "--model", "sonnet", "--output-format", "stream-json", "--verbose"]
             args += writable ? ["--tools=Read,Grep,Glob,Write,Edit", "--permission-mode", "acceptEdits"]
                              : ["--tools=Read,Grep,Glob"]
             switch session {
@@ -69,7 +69,8 @@ final class AgentLauncher: @unchecked Sendable {
     }
 
     /// Exécute la demande dans `directory`, en lecture seule sauf si `writable` (Claude uniquement).
-    func run(prompt: String, provider: AgentProvider = .claude, session: AgentProvider.Session? = nil, writable: Bool = false, in directory: URL) async throws -> String {
+    func run(prompt: String, provider: AgentProvider = .claude, session: AgentProvider.Session? = nil, writable: Bool = false,
+             onEvent: (@Sendable (AgentEvent) -> Void)? = nil, in directory: URL) async throws -> String {
         guard let executable = Self.executableURL(for: provider) else { throw LaunchError.notFound(provider) }
 
         let task = Process()
@@ -93,18 +94,37 @@ final class AgentLauncher: @unchecked Sendable {
 
         return try await withCheckedThrowingContinuation { continuation in
             // Lecture en continu pour ne pas bloquer le processus si la sortie est longue.
-            let reader = Task.detached { () -> Data in
-                (try? out.fileHandleForReading.readToEnd()) ?? Data()
+            // Claude répond en JSON ligne par ligne : on en tire les événements et la réponse finale.
+            let streamed = provider == .claude
+            let reader = Task.detached { () -> (raw: String, final: AgentEvent?) in
+                guard streamed else {
+                    return (String(decoding: (try? out.fileHandleForReading.readToEnd()) ?? Data(), as: UTF8.self), nil)
+                }
+                var raw = "", final: AgentEvent?
+                do {
+                    for try await line in out.fileHandleForReading.bytes.lines {
+                        let events = AgentStreamParser.events(fromLine: line)
+                        if events.isEmpty { raw += line + "\n" }
+                        for event in events {
+                            if case .finished = event { final = event } else { onEvent?(event) }
+                        }
+                    }
+                } catch {}
+                return (raw, final)
             }
             task.terminationHandler = { [weak self] finished in
                 Task {
-                    let data = await reader.value
-                    let text = String(decoding: data, as: UTF8.self)
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    let output = await reader.value
+                    var text = output.raw.trimmingCharacters(in: .whitespacesAndNewlines)
+                    var failed = finished.terminationStatus != 0
+                    if case .finished(let answer, let isError)? = output.final {
+                        text = answer.trimmingCharacters(in: .whitespacesAndNewlines)
+                        failed = failed || isError
+                    }
                     let cancelled = self?.consumeCancelled() ?? false
                     if cancelled {
                         continuation.resume(throwing: LaunchError.cancelled)
-                    } else if finished.terminationStatus == 0 {
+                    } else if !failed {
                         continuation.resume(returning: text)
                     } else {
                         continuation.resume(throwing: LaunchError.failed(code: finished.terminationStatus, output: String(text.suffix(600))))

@@ -119,9 +119,13 @@ enum AgentChat {
         }
         if !continuing { conversationID = nil; conversationWritable = false }
         state.stateOverride = .thinking
+        state.agentChanges = []
         do {
             let answer = try await launcher.run(prompt: prompt, provider: provider, session: session, writable: writable,
-                                                onEvent: { event in Task { @MainActor in show(event, state: state) } },
+                                                onEvent: { event in
+                                                    guard let change = AgentChange.from(event) else { return }
+                                                    Task { @MainActor in show(change, state: state) }
+                                                },
                                                 in: projectURL)
             finish(answer, provider: provider, session: session, writable: writable, state: state)
         } catch AgentLauncher.LaunchError.cancelled {
@@ -144,16 +148,10 @@ enum AgentChat {
         }
     }
 
-    /// Ouvre la vue du fichier que l'agent vient de modifier.
-    private static func show(_ event: AgentEvent, state: AppState) {
-        switch event {
-        case .fileWritten(let path, let content):
-            state.agentFile = DiffEngine.fromNew(content: content, path: path)
-        case .fileEdited(let path, let old, let new, _):
-            state.agentFile = DiffEngine.fromEdit(old: old, new: new, path: path)
-        case .finished:
-            return
-        }
+    /// Ajoute le fichier que l'agent vient de modifier à la fenêtre et l'ouvre.
+    private static func show(_ change: AgentChange, state: AppState) {
+        state.agentChanges.append(change)
+        state.agentSelected = change.id
         AgentFileWindow.shared.show(state: state)
     }
 

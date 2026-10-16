@@ -96,6 +96,7 @@
 		3CF69605BB03E567C2DB0935 /* MacDictation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6544ED02D945CF9F00647AD1 /* MacDictation.swift */; };
 		3D9DF8094D4B5FADBC64A071 /* CaptureCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BA58E1F273995F1C51AAAC /* CaptureCardView.swift */; };
 		3E84EA0AE7C450941ED943CF /* NowPlayingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F56C7E1EBC74664A7F1689CF /* NowPlayingViews.swift */; };
+		3F70B036F51F038FBA42CD4A /* AgentChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2BD5E938CAE23BD61A656FF /* AgentChange.swift */; };
 		40473EEC3029D466B2769672 /* AppleStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 681E15F99FCF1E60C2553004 /* AppleStyle.swift */; };
 		40F7576FC56ED7BC1D2B717E /* PillColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37564F5F041B38C976DF3DEF /* PillColors.swift */; };
 		410F0237661DBC02AD886663 /* FlowPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD88FB0222D3F8893AF1D33D /* FlowPill.swift */; };
@@ -318,6 +319,7 @@
 		C61E45A1B325BEFBE854AB53 /* PortfolioViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A9F0D1E310731155BCB3D89 /* PortfolioViews.swift */; };
 		C67B690DFC0A294C0E65FCBB /* IslandScreenGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9466FDE02C9B3FB4EF01DFF8 /* IslandScreenGeometry.swift */; };
 		C6EB0156909305CEF8B84A8D /* VoiceDataSources.swift in Sources */ = {isa = PBXBuildFile; fileRef = F289B4DB7C57BC593C2E7B7F /* VoiceDataSources.swift */; };
+		C79479A2250EFED0061E2202 /* AgentChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2BD5E938CAE23BD61A656FF /* AgentChange.swift */; };
 		C7C4953290E7C198E2918E14 /* VitalsHoverLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7889BA1980AB9D261DDE8A25 /* VitalsHoverLine.swift */; };
 		C7DCF18B4588088307E49FAD /* ParakeetEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C8178EB447DDE9C03427B36 /* ParakeetEngine.swift */; };
 		C808B654C84D9F71DBF8493A /* GithubPoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CB8B6E5E9DA6164F979E88F /* GithubPoller.swift */; };
@@ -566,6 +568,7 @@
 		A14A61070D293AB4BBA303F7 /* NotchBuddy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NotchBuddy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2737EC4885ADB8FDDA1C610 /* VoiceActionRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceActionRunner.swift; sourceTree = "<group>"; };
 		A29F4C0B02BE91654D02AA0C /* BotCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotCanvasView.swift; sourceTree = "<group>"; };
+		A2BD5E938CAE23BD61A656FF /* AgentChange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentChange.swift; sourceTree = "<group>"; };
 		A5DC0954D23B69B247578437 /* question.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = question.wav; sourceTree = "<group>"; };
 		A83D5410BD030B243ADDCFF4 /* ClaudeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeService.swift; sourceTree = "<group>"; };
 		A87F39805C78722F614295B4 /* VoiceAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceAudio.swift; sourceTree = "<group>"; };
@@ -671,6 +674,7 @@
 		2D4550630644796DA0649B81 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				A2BD5E938CAE23BD61A656FF /* AgentChange.swift */,
 				8015F9EDE795265F753B21B4 /* AgentChat.swift */,
 				E63D44D11C044019FAA4D9BB /* AgentFileView.swift */,
 				5A8FCDFDF716834EA42C91C0 /* AgentFileWindow.swift */,
@@ -1161,6 +1165,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C79479A2250EFED0061E2202 /* AgentChange.swift in Sources */,
 				1B576C919EB3B1649E60F28B /* AgentChat.swift in Sources */,
 				D1513155870E9B7A2739A4E9 /* AgentFileView.swift in Sources */,
 				B2904842FF1B542AC6FCB089 /* AgentFileWindow.swift in Sources */,
@@ -1397,6 +1402,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3F70B036F51F038FBA42CD4A /* AgentChange.swift in Sources */,
 				E4F32160E1C09A1D960EBDF7 /* AgentChat.swift in Sources */,
 				AA16DEE4936DDC451D19BC58 /* AgentFileView.swift in Sources */,
 				046ED381E6BBBEA4E1C3609C /* AgentFileWindow.swift in Sources */,

@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// The card shown in its own window (AgentFileWindow) when the CLI agent changes a file (chat /agent!):
-/// bordered, with the file name and the lines added or removed.
+/// bordered, with the file name, the lines added or removed, one tab per file changed, and an undo button.
 struct AgentFileView: View {
     @ObservedObject var state: AppState
     let onClose: () -> Void
@@ -10,10 +10,18 @@ struct AgentFileView: View {
     @State private var typed = 0
     /// Mouse and window positions when the header drag began (screen coordinates).
     @State private var dragStart: (mouse: NSPoint, origin: NSPoint)?
+    /// Changes whose typing has already played: showing them again is instant.
+    @State private var played: Set<UUID> = []
+    @State private var undoError: String?
+
+    private var change: AgentChange? {
+        state.agentChanges.first { $0.id == state.agentSelected } ?? state.agentChanges.last
+    }
 
     var body: some View {
         ZStack(alignment: .leading) {
-            if let diff = state.agentFile {
+            if let change {
+                let diff = change.diff
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 6) {
                         Image(systemName: "doc.text")
@@ -49,6 +57,7 @@ struct AgentFileView: View {
                     .contentShape(Rectangle())
                     .gesture(DragGesture(minimumDistance: 0).onChanged { _ in moveWindow() }.onEnded { _ in dragStart = nil })
                     Divider().overlay(Color.white.opacity(0.08))
+                    if state.agentChanges.count > 1 { tabs }
                     ScrollViewReader { proxy in
                         ScrollView(.vertical, showsIndicators: false) {
                             let lines = visibleLines(of: diff)
@@ -63,14 +72,75 @@ struct AgentFileView: View {
                             .onChange(of: typed) { _, _ in proxy.scrollTo(lines.count - 1, anchor: .bottom) }
                         }
                     }
+                    Divider().overlay(Color.white.opacity(0.08))
+                    footer(change)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .background(Color(hex: "#141518"))
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(Color.white.opacity(0.14), lineWidth: 1))
-                .task(id: diff) { await type(diff) }
+                .task(id: change.id) {
+                    if change.id == state.agentChanges.last?.id, !played.contains(change.id) {
+                        await type(diff)
+                    } else {
+                        typed = addedCount(diff)
+                    }
+                    played.insert(change.id)
+                }
+                .onChange(of: state.agentSelected) { _, _ in undoError = nil }
             }
+        }
+    }
+
+    /// One tab per file changed during the request.
+    private var tabs: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 5) {
+                ForEach(state.agentChanges) { item in
+                    let selected = item.id == change?.id
+                    Button { state.agentSelected = item.id } label: {
+                        Text(item.diff.name)
+                            .font(.system(size: 10.5, weight: .medium))
+                            .foregroundColor(selected ? Color(hex: "#F5F6F8") : Color(hex: "#6B7079"))
+                            .strikethrough(item.undone)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Color.white.opacity(selected ? 0.12 : 0.05))
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+        }
+    }
+
+    private func footer(_ change: AgentChange) -> some View {
+        HStack(spacing: 8) {
+            Text(verbatim: change.undone ? "Modification annulée." : (undoError ?? ""))
+                .font(.system(size: 10.5))
+                .foregroundColor(Color(hex: change.undone ? "#9398A1" : "#F4505E"))
+                .lineLimit(1)
+            Spacer(minLength: 2)
+            if !change.undone {
+                SecondaryButton(verbatim: "Annuler la modification") { undo(change) }
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+    }
+
+    private func undo(_ change: AgentChange) {
+        do {
+            try change.undo()
+            if let index = state.agentChanges.firstIndex(where: { $0.id == change.id }) {
+                state.agentChanges[index].undone = true
+            }
+            undoError = nil
+        } catch {
+            undoError = error.localizedDescription
         }
     }
 

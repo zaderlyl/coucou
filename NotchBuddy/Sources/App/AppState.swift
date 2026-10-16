@@ -401,6 +401,8 @@ final class AppState: ObservableObject {
 
     // Chat conversation history
     @Published var chatHistory: [ChatMessage] = []
+    /// File the CLI agent just changed (chat /agent!), shown by AgentFileView.
+    @Published var agentFile: FileDiff?
 
     // Pending approval request from Claude Code hook
     @Published var pendingApproval: ApprovalInfo? = nil

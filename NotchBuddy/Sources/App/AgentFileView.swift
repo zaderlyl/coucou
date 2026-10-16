@@ -1,0 +1,100 @@
+import SwiftUI
+
+/// The island when the CLI agent changes a file (chat /agent!): Mochi on the left, a bordered
+/// card on the right with the file name and the lines added or removed.
+struct AgentFileView: View {
+    @ObservedObject var state: AppState
+    /// Characters of added lines typed so far; the diff is replayed like live typing.
+    @State private var typed = 0
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            CardBackground(wash: nil)
+            if let diff = state.agentFile {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "doc.text")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(Color(hex: "#9398A1"))
+                        Text(diff.name)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color(hex: "#F5F6F8"))
+                            .lineLimit(1)
+                        Spacer(minLength: 2)
+                        if diff.added > 0 {
+                            Text("+\(diff.added)")
+                                .font(.system(size: 10, weight: .medium).monospaced())
+                                .foregroundColor(Color(hex: "#22C55E"))
+                        }
+                        if diff.removed > 0 {
+                            Text("−\(diff.removed)")
+                                .font(.system(size: 10, weight: .medium).monospaced())
+                                .foregroundColor(Color(hex: "#F4505E"))
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    Divider().overlay(Color.white.opacity(0.08))
+                    ScrollViewReader { proxy in
+                        ScrollView(.vertical, showsIndicators: false) {
+                            let lines = visibleLines(of: diff)
+                            VStack(alignment: .leading, spacing: 0) {
+                                ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                                    DiffLineRowView(line: line).id(index)
+                                }
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                            .onChange(of: lines.count) { _, count in proxy.scrollTo(count - 1, anchor: .bottom) }
+                            .onChange(of: typed) { _, _ in proxy.scrollTo(lines.count - 1, anchor: .bottom) }
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .background(Color.white.opacity(0.03))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.white.opacity(0.14), lineWidth: 1))
+                .padding(.leading, 96)
+                .padding(.trailing, 16)
+                .padding(.vertical, 14)
+                .task(id: diff) { await type(diff) }
+            }
+        }
+    }
+
+    private func addedCount(_ diff: FileDiff) -> Int {
+        diff.hunks.flatMap { $0.lines }.filter { $0.kind == .added }.reduce(0) { $0 + $1.text.count + 1 }
+    }
+
+    /// Removed and unchanged lines show at once; added lines appear character by character.
+    private func visibleLines(of diff: FileDiff) -> [DiffLine] {
+        var budget = typed
+        var result: [DiffLine] = []
+        for var line in diff.hunks.flatMap({ $0.lines }) {
+            if line.kind == .added {
+                if budget <= 0 { break }
+                if budget < line.text.count + 1 {
+                    line.text = String(line.text.prefix(budget))
+                    result.append(line)
+                    break
+                }
+                budget -= line.text.count + 1
+            }
+            result.append(line)
+        }
+        return result
+    }
+
+    /// About 2 seconds for a whole file, whatever its size, 60 steps a second at most.
+    private func type(_ diff: FileDiff) async {
+        typed = 0
+        let total = addedCount(diff)
+        let step = max(1, total / 120)
+        while typed < total {
+            try? await Task.sleep(for: .milliseconds(16))
+            if Task.isCancelled { return }
+            typed = min(total, typed + step)
+        }
+    }
+}

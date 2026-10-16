@@ -262,6 +262,7 @@
 		A885B7E6DC43231BECE36E3D /* MochiWardrobe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79A7807ADD0963FF260D1FAD /* MochiWardrobe.swift */; };
 		A94F75489794D9C95E584B56 /* EnergyVAD.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0E2C3ACD815230A0ECAB014 /* EnergyVAD.swift */; };
 		A9EA458EBA699F51AB7A7DAD /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 309025C92C81E04B357F560C /* FluidAudio */; };
+		AA16DEE4936DDC451D19BC58 /* AgentFileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E63D44D11C044019FAA4D9BB /* AgentFileView.swift */; };
 		AAECF326505B361B5F818150 /* LiveVoiceControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54E47E39D2D52584FA219FA1 /* LiveVoiceControls.swift */; };
 		ABE0CEF17018F1BAD8F7DBFA /* TurnEndPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 787D306C2399FBAE8BBB86ED /* TurnEndPolicy.swift */; };
 		ACBC410CF50E4B96706DA074 /* FlowKeyLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4983B1317913482E61EB344D /* FlowKeyLogic.swift */; };
@@ -334,6 +335,7 @@
 		CF89B87E2E6E6D838ECE9B8F /* MachineVitals.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4D4076443F9849FF25CCCFB /* MachineVitals.swift */; };
 		D00A95A24714141AB82621BE /* FlowStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7124E98A85D75D3378F0AC8 /* FlowStore.swift */; };
 		D092D0D597D1CBCE6B775B5E /* ServicePublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F0C229BD085D76EB3DD94DF /* ServicePublisher.swift */; };
+		D1513155870E9B7A2739A4E9 /* AgentFileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E63D44D11C044019FAA4D9BB /* AgentFileView.swift */; };
 		D19FA3394EE99B34184684ED /* MochiWardrobe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79A7807ADD0963FF260D1FAD /* MochiWardrobe.swift */; };
 		D1C243401794E8BB087D8B10 /* FlowText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 324FEF6CF23F9D4A95799431 /* FlowText.swift */; };
 		D20B2B175A5C1D9B410B51C0 /* PillCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96C64C4C5D705CE486221B74 /* PillCatalog.swift */; };
@@ -611,6 +613,7 @@
 		DE925A6844FE3E3C09131CE0 /* VoiceTranscriptHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceTranscriptHistory.swift; sourceTree = "<group>"; };
 		E18E74B3586BC0861C69E70A /* InstructionComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstructionComposer.swift; sourceTree = "<group>"; };
 		E269A474928E8BCD88627C9D /* AgentLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentLauncher.swift; sourceTree = "<group>"; };
+		E63D44D11C044019FAA4D9BB /* AgentFileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentFileView.swift; sourceTree = "<group>"; };
 		E6AAC67875F84A862BC2A9AF /* ServiceDetailRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDetailRunner.swift; sourceTree = "<group>"; };
 		E84E5D91129352E8A1D32AA4 /* MochiOutfitDrawing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MochiOutfitDrawing.swift; sourceTree = "<group>"; };
 		E91B733ADC638E14E9BB6EFA /* WindowContextCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowContextCapture.swift; sourceTree = "<group>"; };
@@ -666,6 +669,7 @@
 			isa = PBXGroup;
 			children = (
 				8015F9EDE795265F753B21B4 /* AgentChat.swift */,
+				E63D44D11C044019FAA4D9BB /* AgentFileView.swift */,
 				E269A474928E8BCD88627C9D /* AgentLauncher.swift */,
 				4AA68FE435C40C0AD7347122 /* AgentRouter.swift */,
 				8532BB03EC9317D57CF335DC /* AgentStream.swift */,
@@ -1154,6 +1158,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1B576C919EB3B1649E60F28B /* AgentChat.swift in Sources */,
+				D1513155870E9B7A2739A4E9 /* AgentFileView.swift in Sources */,
 				6054EBAB2CD8D14B853DBCBE /* AgentLauncher.swift in Sources */,
 				14B1BF4D130666B3DB9CF905 /* AgentRouter.swift in Sources */,
 				03AC3C65D66DF54B867DB896 /* AgentStream.swift in Sources */,
@@ -1388,6 +1393,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E4F32160E1C09A1D960EBDF7 /* AgentChat.swift in Sources */,
+				AA16DEE4936DDC451D19BC58 /* AgentFileView.swift in Sources */,
 				91995DE7256293632901DD2D /* AgentLauncher.swift in Sources */,
 				65A107D5DD9FCA02EAAA452F /* AgentRouter.swift in Sources */,
 				807759B0AB67B61494BBD715 /* AgentStream.swift in Sources */,

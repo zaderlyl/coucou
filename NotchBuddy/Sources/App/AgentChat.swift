@@ -120,7 +120,9 @@ enum AgentChat {
         if !continuing { conversationID = nil; conversationWritable = false }
         state.stateOverride = .thinking
         do {
-            let answer = try await launcher.run(prompt: prompt, provider: provider, session: session, writable: writable, in: projectURL)
+            let answer = try await launcher.run(prompt: prompt, provider: provider, session: session, writable: writable,
+                                                onEvent: { event in Task { @MainActor in show(event, state: state) } },
+                                                in: projectURL)
             finish(answer, provider: provider, session: session, writable: writable, state: state)
         } catch AgentLauncher.LaunchError.cancelled {
             reply("Agent annulé.", state: state)
@@ -140,6 +142,19 @@ enum AgentChat {
                 reply("\(error.localizedDescription)\n\nRepli sur claude échoué : \(fallbackError.localizedDescription)", state: state)
             }
         }
+    }
+
+    /// Ouvre la vue du fichier que l'agent vient de modifier.
+    private static func show(_ event: AgentEvent, state: AppState) {
+        switch event {
+        case .fileWritten(let path, let content):
+            state.agentFile = DiffEngine.fromNew(content: content, path: path)
+        case .fileEdited(let path, let old, let new, _):
+            state.agentFile = DiffEngine.fromEdit(old: old, new: new, path: path)
+        case .finished:
+            return
+        }
+        NotificationCenter.default.post(name: .hookExpand, object: IslandView.agentFile)
     }
 
     private static func finish(_ answer: String, provider: AgentProvider, session: AgentProvider.Session?,

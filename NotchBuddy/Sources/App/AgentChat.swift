@@ -1,7 +1,8 @@
 import Foundation
 
 /// Branche le lanceur d'agent sur le chat de l'île, sans toucher à ses vues :
-/// `/agent <demande>` lance `claude -p` en lecture seule, `/stop` l'annule,
+/// `/agent <demande>` choisit l'IA (claude, gemini ou codex) selon la demande et la lance en lecture seule ;
+/// `/claude`, `/gemini` et `/codex <demande>` en imposent une. `/stop` annule,
 /// `/projet` liste les projets (ceux ouverts dans VS Code d'abord) et `/projet <n° ou nom>` en choisit un.
 /// Le projet choisi est gardé dans la clé `agentProjectPath`.
 @MainActor
@@ -14,8 +15,18 @@ enum AgentChat {
         .appendingPathComponent("Documents/GitHub")
     private static let launcher = AgentLauncher()
 
+    /// `/claude`, `/gemini`, `/codex` : choisit l'IA sans passer par le routeur.
+    private static func forcedProvider(_ query: String) -> (AgentProvider, String)? {
+        for provider in AgentProvider.allCases {
+            let prefix = "/\(provider.rawValue) "
+            if query.hasPrefix(prefix) { return (provider, String(query.dropFirst(prefix.count))) }
+        }
+        return nil
+    }
+
     static func handles(_ query: String) -> Bool {
-        query.hasPrefix(command) || query == stopCommand
+        forcedProvider(query) != nil
+            || query.hasPrefix(command) || query == stopCommand
             || query == projectCommand || query.hasPrefix(projectCommand + " ")
     }
 
@@ -68,15 +79,18 @@ enum AgentChat {
             chooseProject(String(query.dropFirst(projectCommand.count)).trimmingCharacters(in: .whitespaces), state: state)
             return
         }
-        let prompt = String(query.dropFirst(command.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        let forced = forcedProvider(query)
+        let prompt = (forced?.1 ?? String(query.dropFirst(command.count)))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty else {
-            reply("Usage : /agent <demande>. Dossier : \(projectURL.path)", state: state)
+            reply("Usage : /agent <demande> (ou /claude, /gemini, /codex). Dossier : \(projectURL.path)", state: state)
             return
         }
+        let provider = forced?.0 ?? AgentRouter.provider(for: prompt)
         state.stateOverride = .thinking
         do {
-            let answer = try await launcher.run(prompt: prompt, in: projectURL)
-            reply(answer.isEmpty ? "(réponse vide)" : answer, state: state)
+            let answer = try await launcher.run(prompt: prompt, provider: provider, in: projectURL)
+            reply("[\(provider.rawValue)] " + (answer.isEmpty ? "(réponse vide)" : answer), state: state)
         } catch AgentLauncher.LaunchError.cancelled {
             reply("Agent annulé.", state: state)
         } catch {

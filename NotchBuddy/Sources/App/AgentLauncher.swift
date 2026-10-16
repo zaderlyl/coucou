@@ -6,10 +6,23 @@ enum AgentProvider: String, CaseIterable, Sendable {
 
     var binary: String { rawValue }
 
+    /// Conversation de Claude : `start` ouvre une session au `id` donné, `resume` la reprend.
+    enum Session: Sendable {
+        case start(UUID)
+        case resume(UUID)
+    }
+
     /// Arguments pour répondre à `prompt` sans rien modifier dans le projet.
-    func arguments(prompt: String) -> [String] {
+    func arguments(prompt: String, session: Session? = nil) -> [String] {
         switch self {
-        case .claude: return ["-p", prompt, "--permission-mode", "plan"]
+        case .claude:
+            var args = ["-p", prompt, "--tools=Read,Grep,Glob"]
+            switch session {
+            case .start(let id): args += ["--session-id", id.uuidString]
+            case .resume(let id): args += ["--resume", id.uuidString]
+            case nil: break
+            }
+            return args
         case .gemini: return ["-p", prompt]
         case .codex: return ["exec", "--sandbox", "read-only", prompt]
         }
@@ -53,13 +66,19 @@ final class AgentLauncher: @unchecked Sendable {
     }
 
     /// Exécute la demande dans `directory`, en lecture seule.
-    func run(prompt: String, provider: AgentProvider = .claude, in directory: URL) async throws -> String {
+    func run(prompt: String, provider: AgentProvider = .claude, session: AgentProvider.Session? = nil, in directory: URL) async throws -> String {
         guard let executable = Self.executableURL(for: provider) else { throw LaunchError.notFound(provider) }
 
         let task = Process()
         task.executableURL = executable
-        task.arguments = provider.arguments(prompt: prompt)
+        task.arguments = provider.arguments(prompt: prompt, session: session)
         task.currentDirectoryURL = directory
+        // Lancée hors terminal, l'appli n'a pas de TERM : on évite l'avertissement « 256-color » de gemini.
+        var environment = ProcessInfo.processInfo.environment
+        environment["TERM"] = "xterm-256color"
+        environment["COLORTERM"] = "truecolor"
+        environment["NO_COLOR"] = "1"
+        task.environment = environment
         let out = Pipe()
         task.standardOutput = out
         task.standardError = out
@@ -85,7 +104,7 @@ final class AgentLauncher: @unchecked Sendable {
                     } else if finished.terminationStatus == 0 {
                         continuation.resume(returning: text)
                     } else {
-                        continuation.resume(throwing: LaunchError.failed(code: finished.terminationStatus, output: text))
+                        continuation.resume(throwing: LaunchError.failed(code: finished.terminationStatus, output: String(text.suffix(600))))
                     }
                 }
             }

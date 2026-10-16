@@ -10,6 +10,9 @@ enum AgentChat {
     static let command = "/agent "
     static let stopCommand = "/stop"
     static let projectCommand = "/projet"
+    static let endCommand = "/fin"
+    /// Conversation Claude en cours : tant qu'elle existe, les messages sans « / » lui sont envoyés.
+    private static var conversationID: UUID?
     private static let projectKey = "agentProjectPath"
     private static let githubRoot = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("Documents/GitHub")
@@ -25,7 +28,9 @@ enum AgentChat {
     }
 
     static func handles(_ query: String) -> Bool {
-        forcedProvider(query) != nil
+        (conversationID != nil && !query.hasPrefix("/"))
+            || query == endCommand
+            || forcedProvider(query) != nil
             || query.hasPrefix(command) || query == stopCommand
             || query == projectCommand || query.hasPrefix(projectCommand + " ")
     }
@@ -75,22 +80,44 @@ enum AgentChat {
             launcher.cancel()
             return
         }
+        if query == endCommand {
+            conversationID = nil
+            reply("Conversation avec l'agent terminée.", state: state)
+            return
+        }
         if query == projectCommand || query.hasPrefix(projectCommand + " ") {
+            conversationID = nil
             chooseProject(String(query.dropFirst(projectCommand.count)).trimmingCharacters(in: .whitespaces), state: state)
             return
         }
-        let forced = forcedProvider(query)
-        let prompt = (forced?.1 ?? String(query.dropFirst(command.count)))
+        let continuing = conversationID != nil && !query.hasPrefix("/")
+        let forced = continuing ? nil : forcedProvider(query)
+        let prompt = (continuing ? query : (forced?.1 ?? String(query.dropFirst(command.count))))
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty else {
             reply("Usage : /agent <demande> (ou /claude, /gemini, /codex). Dossier : \(projectURL.path)", state: state)
             return
         }
-        let provider = forced?.0 ?? AgentRouter.provider(for: prompt)
+        let provider = continuing ? .claude : (forced?.0 ?? AgentRouter.provider(for: prompt))
+        // Seul Claude garde le fil : une nouvelle demande ouvre une nouvelle session, la suite la reprend.
+        let session: AgentProvider.Session?
+        if continuing, let id = conversationID {
+            session = .resume(id)
+        } else if provider == .claude {
+            session = .start(UUID())
+        } else {
+            session = nil
+        }
+        if !continuing { conversationID = nil }
         state.stateOverride = .thinking
         do {
-            let answer = try await launcher.run(prompt: prompt, provider: provider, in: projectURL)
-            reply("[\(provider.rawValue)] " + (answer.isEmpty ? "(réponse vide)" : answer), state: state)
+            let answer = try await launcher.run(prompt: prompt, provider: provider, session: session, in: projectURL)
+            var text = "[\(provider.rawValue)] " + (answer.isEmpty ? "(réponse vide)" : answer)
+            if case .start(let id)? = session {
+                conversationID = id
+                text += "\n\n(Réponds directement pour continuer, /fin pour terminer.)"
+            }
+            reply(text, state: state)
         } catch AgentLauncher.LaunchError.cancelled {
             reply("Agent annulé.", state: state)
         } catch {

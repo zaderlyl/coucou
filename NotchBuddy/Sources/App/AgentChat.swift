@@ -112,17 +112,35 @@ enum AgentChat {
         state.stateOverride = .thinking
         do {
             let answer = try await launcher.run(prompt: prompt, provider: provider, session: session, in: projectURL)
-            var text = "[\(provider.rawValue)] " + (answer.isEmpty ? "(réponse vide)" : answer)
-            if case .start(let id)? = session {
-                conversationID = id
-                text += "\n\n(Réponds directement pour continuer, /fin pour terminer.)"
-            }
-            reply(text, state: state)
+            finish(answer, provider: provider, session: session, state: state)
         } catch AgentLauncher.LaunchError.cancelled {
             reply("Agent annulé.", state: state)
         } catch {
-            reply(error.localizedDescription, state: state)
+            // Repli sur Claude seulement si le routeur a choisi gemini/codex : une IA imposée par l'utilisateur n'est pas remplacée.
+            guard !continuing, forced == nil, provider != .claude else {
+                reply(error.localizedDescription, state: state)
+                return
+            }
+            let id = UUID()
+            do {
+                let answer = try await launcher.run(prompt: prompt, provider: .claude, session: .start(id), in: projectURL)
+                finish(answer, provider: .claude, session: .start(id), note: "\(provider.rawValue) indisponible → ", state: state)
+            } catch AgentLauncher.LaunchError.cancelled {
+                reply("Agent annulé.", state: state)
+            } catch let fallbackError {
+                reply("\(error.localizedDescription)\n\nRepli sur claude échoué : \(fallbackError.localizedDescription)", state: state)
+            }
         }
+    }
+
+    private static func finish(_ answer: String, provider: AgentProvider, session: AgentProvider.Session?,
+                               note: String = "", state: AppState) {
+        var text = "[\(note)\(provider.rawValue)] " + (answer.isEmpty ? "(réponse vide)" : answer)
+        if case .start(let id)? = session {
+            conversationID = id
+            text += "\n\n(Réponds directement pour continuer, /fin pour terminer.)"
+        }
+        reply(text, state: state)
     }
 
     private static func chooseProject(_ argument: String, state: AppState) {

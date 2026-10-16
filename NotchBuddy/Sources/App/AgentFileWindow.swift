@@ -7,9 +7,15 @@ final class AgentFileWindow {
     static let shared = AgentFileWindow()
     private static let size = NSSize(width: 520, height: 260)
     private var panel: NSPanel?
+    var window: NSWindow? { panel }
 
     func show(state: AppState) {
-        let panel = self.panel ?? makePanel(state: state)
+        if let panel {
+            // Already placed (and maybe moved by the user): keep its position.
+            panel.orderFrontRegardless()
+            return
+        }
+        let panel = makePanel(state: state)
         self.panel = panel
         let screen = NSScreen.main ?? NSScreen.screens[0]
         // Right-aligned so it never covers the island, just below its expanded height (160 pt).

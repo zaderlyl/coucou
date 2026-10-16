@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// The card shown in its own window (AgentFileWindow) when the CLI agent changes a file (chat /agent!):
@@ -7,6 +8,8 @@ struct AgentFileView: View {
     let onClose: () -> Void
     /// Characters of added lines typed so far; the diff is replayed like live typing.
     @State private var typed = 0
+    /// Mouse and window positions when the header drag began (screen coordinates).
+    @State private var dragStart: (mouse: NSPoint, origin: NSPoint)?
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -43,6 +46,8 @@ struct AgentFileView: View {
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
+                    .contentShape(Rectangle())
+                    .gesture(DragGesture(minimumDistance: 0).onChanged { _ in moveWindow() }.onEnded { _ in dragStart = nil })
                     Divider().overlay(Color.white.opacity(0.08))
                     ScrollViewReader { proxy in
                         ScrollView(.vertical, showsIndicators: false) {
@@ -67,6 +72,16 @@ struct AgentFileView: View {
                 .task(id: diff) { await type(diff) }
             }
         }
+    }
+
+    /// Moves the window with the mouse by hand: a borderless panel does not drag itself under SwiftUI.
+    private func moveWindow() {
+        guard let panel = AgentFileWindow.shared.window else { return }
+        let mouse = NSEvent.mouseLocation
+        if dragStart == nil { dragStart = (mouse, panel.frame.origin) }
+        guard let start = dragStart else { return }
+        panel.setFrameOrigin(NSPoint(x: start.origin.x + mouse.x - start.mouse.x,
+                                     y: start.origin.y + mouse.y - start.mouse.y))
     }
 
     private func addedCount(_ diff: FileDiff) -> Int {

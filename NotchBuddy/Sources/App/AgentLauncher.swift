@@ -12,11 +12,14 @@ enum AgentProvider: String, CaseIterable, Sendable {
         case resume(UUID)
     }
 
-    /// Arguments pour répondre à `prompt` sans rien modifier dans le projet.
-    func arguments(prompt: String, session: Session? = nil) -> [String] {
+    /// Arguments pour répondre à `prompt`. Sans `writable`, rien n'est modifié dans le projet ;
+    /// avec, Claude peut aussi écrire et éditer des fichiers (jamais de shell).
+    func arguments(prompt: String, session: Session? = nil, writable: Bool = false) -> [String] {
         switch self {
         case .claude:
-            var args = ["-p", prompt, "--tools=Read,Grep,Glob"]
+            var args = ["-p", prompt, "--model", "sonnet"]
+            args += writable ? ["--tools=Read,Grep,Glob,Write,Edit", "--permission-mode", "acceptEdits"]
+                             : ["--tools=Read,Grep,Glob"]
             switch session {
             case .start(let id): args += ["--session-id", id.uuidString]
             case .resume(let id): args += ["--resume", id.uuidString]
@@ -65,13 +68,13 @@ final class AgentLauncher: @unchecked Sendable {
             .map { URL(fileURLWithPath: $0) }
     }
 
-    /// Exécute la demande dans `directory`, en lecture seule.
-    func run(prompt: String, provider: AgentProvider = .claude, session: AgentProvider.Session? = nil, in directory: URL) async throws -> String {
+    /// Exécute la demande dans `directory`, en lecture seule sauf si `writable` (Claude uniquement).
+    func run(prompt: String, provider: AgentProvider = .claude, session: AgentProvider.Session? = nil, writable: Bool = false, in directory: URL) async throws -> String {
         guard let executable = Self.executableURL(for: provider) else { throw LaunchError.notFound(provider) }
 
         let task = Process()
         task.executableURL = executable
-        task.arguments = provider.arguments(prompt: prompt, session: session)
+        task.arguments = provider.arguments(prompt: prompt, session: session, writable: writable)
         task.currentDirectoryURL = directory
         // Lancée hors terminal, l'appli n'a pas de TERM : on évite l'avertissement « 256-color » de gemini.
         var environment = ProcessInfo.processInfo.environment

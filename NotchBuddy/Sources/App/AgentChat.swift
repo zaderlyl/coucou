@@ -2,17 +2,21 @@ import Foundation
 
 /// Branche le lanceur d'agent sur le chat de l'île, sans toucher à ses vues :
 /// `/agent <demande>` choisit l'IA (claude, gemini ou codex) selon la demande et la lance en lecture seule ;
-/// `/claude`, `/gemini` et `/codex <demande>` en imposent une. `/stop` annule,
+/// `/claude`, `/gemini` et `/codex <demande>` en imposent une. `/agent! <demande>` lance Claude avec le droit
+/// d'écrire et d'éditer des fichiers (jamais de shell) dans le projet choisi ; jamais activé par défaut. `/stop` annule,
 /// `/projet` liste les projets (ceux ouverts dans VS Code d'abord) et `/projet <n° ou nom>` en choisit un.
 /// Le projet choisi est gardé dans la clé `agentProjectPath`.
 @MainActor
 enum AgentChat {
     static let command = "/agent "
+    static let writeCommand = "/agent! "
     static let stopCommand = "/stop"
     static let projectCommand = "/projet"
     static let endCommand = "/fin"
     /// Conversation Claude en cours : tant qu'elle existe, les messages sans « / » lui sont envoyés.
     private static var conversationID: UUID?
+    /// La conversation en cours a été ouverte avec `/agent!` : ses suites gardent le droit d'écrire.
+    private static var conversationWritable = false
     private static let projectKey = "agentProjectPath"
     private static let githubRoot = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("Documents/GitHub")
@@ -31,7 +35,7 @@ enum AgentChat {
         (conversationID != nil && !query.hasPrefix("/"))
             || query == endCommand
             || forcedProvider(query) != nil
-            || query.hasPrefix(command) || query == stopCommand
+            || query.hasPrefix(command) || query.hasPrefix(writeCommand) || query == stopCommand
             || query == projectCommand || query.hasPrefix(projectCommand + " ")
     }
 
@@ -82,20 +86,25 @@ enum AgentChat {
         }
         if query == endCommand {
             conversationID = nil
+            conversationWritable = false
             reply("Conversation avec l'agent terminée.", state: state)
             return
         }
         if query == projectCommand || query.hasPrefix(projectCommand + " ") {
             conversationID = nil
+            conversationWritable = false
             chooseProject(String(query.dropFirst(projectCommand.count)).trimmingCharacters(in: .whitespaces), state: state)
             return
         }
         let continuing = conversationID != nil && !query.hasPrefix("/")
-        let forced = continuing ? nil : forcedProvider(query)
+        let writeRequested = !continuing && query.hasPrefix(writeCommand)
+        let writable = continuing ? conversationWritable : writeRequested
+        // `/agent!` impose Claude, seul capable d'écrire ici.
+        let forced = continuing ? nil : (writeRequested ? (AgentProvider.claude, String(query.dropFirst(writeCommand.count))) : forcedProvider(query))
         let prompt = (continuing ? query : (forced?.1 ?? String(query.dropFirst(command.count))))
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty else {
-            reply("Usage : /agent <demande> (ou /claude, /gemini, /codex). Dossier : \(projectURL.path)", state: state)
+            reply("Usage : /agent <demande> (ou /claude, /gemini, /codex ; /agent! pour autoriser l'écriture). Dossier : \(projectURL.path)", state: state)
             return
         }
         let provider = continuing ? .claude : (forced?.0 ?? AgentRouter.provider(for: prompt))
@@ -108,11 +117,11 @@ enum AgentChat {
         } else {
             session = nil
         }
-        if !continuing { conversationID = nil }
+        if !continuing { conversationID = nil; conversationWritable = false }
         state.stateOverride = .thinking
         do {
-            let answer = try await launcher.run(prompt: prompt, provider: provider, session: session, in: projectURL)
-            finish(answer, provider: provider, session: session, state: state)
+            let answer = try await launcher.run(prompt: prompt, provider: provider, session: session, writable: writable, in: projectURL)
+            finish(answer, provider: provider, session: session, writable: writable, state: state)
         } catch AgentLauncher.LaunchError.cancelled {
             reply("Agent annulé.", state: state)
         } catch {
@@ -123,7 +132,7 @@ enum AgentChat {
             }
             let id = UUID()
             do {
-                let answer = try await launcher.run(prompt: prompt, provider: .claude, session: .start(id), in: projectURL)
+                let answer = try await launcher.run(prompt: prompt, provider: .claude, session: .start(id), writable: false, in: projectURL)
                 finish(answer, provider: .claude, session: .start(id), note: "\(provider.rawValue) indisponible → ", state: state)
             } catch AgentLauncher.LaunchError.cancelled {
                 reply("Agent annulé.", state: state)
@@ -134,10 +143,11 @@ enum AgentChat {
     }
 
     private static func finish(_ answer: String, provider: AgentProvider, session: AgentProvider.Session?,
-                               note: String = "", state: AppState) {
+                               writable: Bool = false, note: String = "", state: AppState) {
         var text = "[\(note)\(provider.rawValue)] " + (answer.isEmpty ? "(réponse vide)" : answer)
         if case .start(let id)? = session {
             conversationID = id
+            conversationWritable = writable
             text += "\n\n(Réponds directement pour continuer, /fin pour terminer.)"
         }
         reply(text, state: state)
